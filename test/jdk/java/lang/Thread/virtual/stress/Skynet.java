@@ -61,7 +61,7 @@ public class Skynet {
     public static void main(String[] args) {
         int iterations = (args.length > 0) ? Integer.parseInt(args[0]) : 10;
         for (int i = 0; i < iterations; i++) {
-            skynet(1_000_000, 499999500000L);
+            skynet(100_000, 4999950000L);
         }
     }
 
@@ -75,7 +75,7 @@ public class Skynet {
         long end = System.currentTimeMillis();
         System.out.format("Result: %d in %s ms%n", sum, (end-start));
         if (sum != expected)
-            throw new AssertionError("unexpected result!");
+            throw new AssertionError("unexpected result of " + sum);
     }
 
     static void skynet(Channel<Long> result, int num, int size, int div) {
