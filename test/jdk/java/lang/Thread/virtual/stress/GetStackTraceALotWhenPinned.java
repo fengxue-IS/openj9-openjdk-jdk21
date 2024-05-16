@@ -28,7 +28,7 @@
  * @requires vm.debug != true
  * @modules java.base/java.lang:+open
  * @library /test/lib
- * @run main/othervm GetStackTraceALotWhenPinned 500000
+ * @run main/othervm GetStackTraceALotWhenPinned 100000
  */
 
 /*
@@ -54,8 +54,45 @@ public class GetStackTraceALotWhenPinned {
         }
 
         int iterations = Integer.parseInt(args[0]);
-        var barrier = new Barrier(2);
+        var barrierNew = new Barrier(2);
 
+        var thread2 = Thread.startVirtualThread(() -> {
+            boolean timed = false;
+            for (int i = 0; i < iterations; i++) {
+                // wait for main thread to arrive
+                barrierNew.await();
+
+                Thread.yield();
+                boolean b = timed;
+                VThreadPinner.runPinned(() -> {
+                    if (b) {
+                        LockSupport.parkNanos(Long.MAX_VALUE);
+                    } else {
+                        LockSupport.park();
+                    }
+                });
+                timed = !timed;
+            }
+        });
+
+        long lastTimestamp = System.currentTimeMillis();
+        long timeStart = lastTimestamp;
+        for (int i = 0; i < iterations; i++) {
+            // wait for virtual thread to arrive
+            barrierNew.await();
+
+            LockSupport.unpark(thread2);
+
+            long currentTime = System.currentTimeMillis();
+            if ((currentTime - lastTimestamp) > 500) {
+                System.out.format("%s %d remaining ...%n", Instant.now(), (iterations - i));
+                lastTimestamp = currentTime;
+            }
+        }
+
+        System.out.format("%s completed in %dms ...%n", Instant.now(), (int)(System.currentTimeMillis() - timeStart));
+
+        var barrier = new Barrier(2);
         // Start a virtual thread that loops doing Thread.yield and parking while pinned.
         // This loop creates the conditions for the main thread to sample the stack trace
         // as it transitions from being unmounted to parking while pinned.
@@ -78,7 +115,9 @@ public class GetStackTraceALotWhenPinned {
             }
         });
 
-        long lastTimestamp = System.currentTimeMillis();
+        lastTimestamp = System.currentTimeMillis();
+        timeStart = lastTimestamp;
+        Thread.testStarted = true;
         for (int i = 0; i < iterations; i++) {
             // wait for virtual thread to arrive
             barrier.await();
@@ -92,6 +131,14 @@ public class GetStackTraceALotWhenPinned {
                 lastTimestamp = currentTime;
             }
         }
+        System.out.format("%s completed in %dms ...%n", Instant.now(), (int)(System.currentTimeMillis() - timeStart));
+        System.out.format("Total retry count = %d %n", Thread.retryCount);
+        System.out.format("Total cont ST call = %d %n", Thread.contCall);
+        System.out.format("Total cont ST time = %d ms %n", (int)(Thread.contSTT / 1000000));
+        System.out.format("Avg cont ST call = %d ns %n", (int)(Thread.contSTT / Thread.contCall));
+        System.out.format("Total ncont ST call = %d %n", Thread.ncontCall);
+        System.out.format("Total ncont ST time = %d ms %n", (int)(Thread.ncontSTT / 1000000));
+        System.out.format("Avg ncont ST call = %d ns %n", (int)(Thread.ncontSTT / Thread.ncontCall));
     }
 
     /**

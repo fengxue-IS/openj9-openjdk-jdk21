@@ -959,6 +959,9 @@ final class VirtualThread extends BaseVirtualThread {
                     : tryGetStackTrace();         // unmounted
             if (stackTrace == null) {
                 Thread.yield();
+                if (Thread.testStarted) {
+                    Thread.retryCount +=1;
+                }
             }
         } while (stackTrace == null);
         return stackTrace;
@@ -998,7 +1001,15 @@ final class VirtualThread extends BaseVirtualThread {
         // get stack trace and restore state
         StackTraceElement[] stack;
         try {
+            long currentTime = 0;
+            if (Thread.testStarted) {
+                currentTime = System.nanoTime();
+            }
             stack = cont.getStackTrace();
+            if (Thread.testStarted) {
+                Thread.contSTT += System.nanoTime() - currentTime;
+                Thread.contCall += 1;
+            }
         } finally {
             assert state == suspendedState;
             setState(initialState);

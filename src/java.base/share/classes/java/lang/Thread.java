@@ -2487,6 +2487,10 @@ public class Thread implements Runnable {
      * terminated.
      */
     StackTraceElement[] asyncGetStackTrace() {
+        long currentTime = 0;
+        if (Thread.testStarted) {
+            currentTime = System.nanoTime();
+        }
         Object stackTrace = getStackTrace0();
         if (stackTrace == null) {
             return null;
@@ -2495,6 +2499,10 @@ public class Thread implements Runnable {
         if (stes.length == 0) {
             return null;
         } else {
+            if (Thread.testStarted) {
+                Thread.ncontSTT += System.nanoTime() - currentTime;
+                Thread.ncontCall += 1;
+            }
             return StackTraceElement.of(stes);
         }
     }
@@ -3062,6 +3070,13 @@ public class Thread implements Runnable {
     private static ThreadGroup mainGroup;
     // Symbolic constant, no threadRef assigned or already cleaned up
     static final long NO_REF = 0;
+
+    public static int retryCount = 0;
+    public static int contCall = 0;
+    public static int ncontCall = 0;
+    public static long contSTT = 0;
+    public static long ncontSTT = 0;
+    public static boolean testStarted;
 
     void uncaughtException(Throwable e) {
         UncaughtExceptionHandler handler = getUncaughtExceptionHandler();
