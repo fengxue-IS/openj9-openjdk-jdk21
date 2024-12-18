@@ -57,23 +57,38 @@ public class ParkALot {
         }
 
         int maxThreads = Math.clamp(Runtime.getRuntime().availableProcessors() / 2, 1, 4);
+        System.out.format("===================================%nProcessors available = %d%nMax Threads = %d%n", Runtime.getRuntime().availableProcessors(), maxThreads);
+
+        long starttime = System.currentTimeMillis();
+
         for (int nthreads = 1; nthreads <= maxThreads; nthreads++) {
             System.out.format("%s %d thread(s) ...%n", Instant.now(), nthreads);
             ThreadFactory factory = Thread.ofPlatform().factory();
             try (var executor = Executors.newThreadPerTaskExecutor(factory)) {
                 for (int i = 0; i < nthreads; i++) {
-                    executor.submit(() -> parkALot(iterations));
+                    executor.submit(() -> parkALot(iterations, false));
                 }
             }
             System.out.format("%s %d thread(s) done%n", Instant.now(), nthreads);
         }
+
+        long endtime = System.currentTimeMillis();
+        System.out.format("Time used for STD run is %d%n", endtime - starttime);
+
+        starttime = System.currentTimeMillis();
+        ThreadFactory factory = Thread.ofPlatform().factory();
+        try (var executor = Executors.newThreadPerTaskExecutor(factory)) {
+            executor.submit(() -> parkALot(iterations, true));
+        }
+        endtime = System.currentTimeMillis();
+        System.out.format("Time used for 1 SPIN run is %d%n", endtime - starttime);
     }
 
     /**
      * Creates a virtual thread that alternates between untimed and timed parking.
      * A platform thread spins unparking the virtual thread.
      */
-    private static void parkALot(int iterations) {
+    private static void parkALot(int iterations, boolean spin) {
         Thread vthread = Thread.ofVirtual().start(() -> {
             int i = 0;
             boolean timed = false;
@@ -93,6 +108,8 @@ public class ParkALot {
         while ((state = vthread.getState()) != Thread.State.TERMINATED) {
             if (state == Thread.State.WAITING || state == Thread.State.TIMED_WAITING) {
                 LockSupport.unpark(vthread);
+            } else if (spin) {
+                for (int i = 0; i < 100; i++) { i++ }
             } else {
                 Thread.yield();
             }
