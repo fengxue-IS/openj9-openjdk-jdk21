@@ -82,6 +82,20 @@ public class ParkALot {
         }
         endtime = System.currentTimeMillis();
         System.out.format("Time used for 1 SPIN run is %d%n", endtime - starttime);
+
+        starttime = System.currentTimeMillis();
+        for (int nthreads = 1; nthreads <= maxThreads; nthreads++) {
+            System.out.format("%s %d thread(s) ...%n", Instant.now(), nthreads);
+            ThreadFactory factory = Thread.ofPlatform().factory();
+            try (var executor = Executors.newThreadPerTaskExecutor(factory)) {
+                for (int i = 0; i < nthreads; i++) {
+                    executor.submit(() -> parkALot(iterations, true));
+                }
+            }
+            System.out.format("%s %d thread(s) done%n", Instant.now(), nthreads);
+        }
+        endtime = System.currentTimeMillis();
+        System.out.format("Time used for STD SPIN run is %d%n", endtime - starttime);
     }
 
     /**
