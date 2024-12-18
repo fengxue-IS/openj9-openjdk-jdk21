@@ -109,7 +109,9 @@ public class ParkALot {
             if (state == Thread.State.WAITING || state == Thread.State.TIMED_WAITING) {
                 LockSupport.unpark(vthread);
             } else if (spin) {
-                for (int i = 0; i < 100; i++) { i++ }
+                for (int i = 0; i < 100; i++) {
+                    i++;
+                }
             } else {
                 Thread.yield();
             }
