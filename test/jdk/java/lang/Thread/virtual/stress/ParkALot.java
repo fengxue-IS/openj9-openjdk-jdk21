@@ -76,9 +76,11 @@ public class ParkALot {
         System.out.format("Time used for STD run is %d%n", endtime - starttime);
 
         starttime = System.currentTimeMillis();
-        ThreadFactory factory = Thread.ofPlatform().factory();
-        try (var executor = Executors.newThreadPerTaskExecutor(factory)) {
-            executor.submit(() -> parkALot(iterations, true));
+        {
+            ThreadFactory factory = Thread.ofPlatform().factory();
+            try (var executor = Executors.newThreadPerTaskExecutor(factory)) {
+                executor.submit(() -> parkALot(iterations, true));
+            }
         }
         endtime = System.currentTimeMillis();
         System.out.format("Time used for 1 SPIN run is %d%n", endtime - starttime);
