@@ -2806,9 +2806,8 @@ public class Thread implements Runnable {
             case 32: // J9VMTHREAD_STATE_DEAD
                 return State.TERMINATED;
             default:
-                // Fallback case: evaluate the state lazily.
-                synchronized (interruptLock) {
-                    return State.values()[getStateImpl(eetop)];
+                if (started) {
+                    return State.TERMINATED;
                 }
         }
     }
