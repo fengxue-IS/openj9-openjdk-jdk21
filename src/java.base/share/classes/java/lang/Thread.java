@@ -2809,6 +2809,7 @@ public class Thread implements Runnable {
                 if (started) {
                     return State.TERMINATED;
                 }
+                return State.NEW;
         }
     }
 
